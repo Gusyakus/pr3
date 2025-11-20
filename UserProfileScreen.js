@@ -25,11 +25,12 @@ import {
 } from "react-native";
 import userData from "../assets/data/user-data.json";
 
+const API_URL = "https://api.example.com";
 
 export default function UserProfileScreen({ userId, onUpdate }) {
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [profileError, setProfileError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState("");
   const [editedEmail, setEditedEmail] = useState("");
@@ -78,11 +79,9 @@ export default function UserProfileScreen({ userId, onUpdate }) {
    * Загружает профиль при монтировании компонента.
    * Зависимость от userId гарантирует перезагрузку при смене пользователя.
    */
-  useEffect(() => {
-    if (userId) {
-      fetchUserProfile();
-    }
-  }, [userId]);
+useEffect(() => {
+  fetchUserProfile();
+}, );
 
   /**
    * Сохраняет изменения профиля на сервер.
