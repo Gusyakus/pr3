@@ -1,7 +1,29 @@
+/**
+ * Экран профиля пользователя.
+ * Отображает информацию профиля с возможностью редактирования имени и email.
+ * Загружает данные профиля с API сервера при монтировании компонента.
+ *
+ * @component
+ * @param {Object} props - Пропсы компонента
+ * @param {string} props.userId - ID пользователя для загрузки профиля
+ * @param {Function} props.onUpdate - Callback функция при сохранении изменений
+ * @returns {JSX.Element} Экран профиля пользователя
+ *
+ * @example
+ * <UserProfileScreen userId="user123" onUpdate={(data) => console.log(data)} />
+ */
 
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
-import userData from "../assets/data/UserData.json";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  TextInput,
+} from "react-native";
+import userData from "../assets/data/user-data.json";
 
 
 export default function UserProfileScreen({ userId, onUpdate }) {
@@ -12,23 +34,71 @@ export default function UserProfileScreen({ userId, onUpdate }) {
   const [editedName, setEditedName] = useState("");
   const [editedEmail, setEditedEmail] = useState("");
 
+  /**
+   * Загружает профиль пользователя с API сервера.
+   * При успешной загрузке обновляет состояние profile.
+   * При ошибке логирует сообщение об ошибке.
+   *
+   * @async
+   * @throws {Error} Если запрос не удался или сервер вернул ошибку
+   */
   const fetchUserProfile = async () => {
-    setLoading(true);
-    const response = await fetch(`https://api.example.com/users/${userId}`);
-    const data = await response.json();
-    setProfile(data);
-    setLoading(false);
+    setIsLoading(true);
+    setProfileError(null);
+    try {
+      const response = await fetch(`${API_URL}/users/${userId}`, {
+        method: "GET",
+        timeout: 5000,
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Ошибка загрузки профиля: ${response.status} ${response.statusText}`
+        );
+      }
+
+      const data = await response.json();
+      setProfile(data);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Неизвестная ошибка";
+      setProfileError(errorMessage);
+      console.error("Ошибка при загрузке профиля", {
+        userId,
+        errorMessage,
+        errorStack: error instanceof Error ? error.stack : "",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  useEffect(() => {
-    fetchUserProfile();
-  }, );
 
+/**
+   * Загружает профиль при монтировании компонента.
+   * Зависимость от userId гарантирует перезагрузку при смене пользователя.
+   */
+  useEffect(() => {
+    if (userId) {
+      fetchUserProfile();
+    }
+  }, [userId]);
+
+  /**
+   * Сохраняет изменения профиля на сервер.
+   * При успехе вызывает onUpdate callback и отключает режим редактирования.
+   *
+   * @async
+   * @throws {Error} Если запрос не удался или валидация не пройдена
+   */
   const handleSaveProfile = async () => {
-    const updatedData = {
-      name: editedName,
-      email: editedEmail,
-    };
+    try {
+      // Валидация данных перед отправкой
+      if (!editedName.trim() || !editedEmail.trim()) {
+        setProfileError("Имя и email не могут быть пусты");
+        return;
+      }
+
 
     const response = await fetch(`https://api.example.com/users/${userId}`, {
       method: "PUT",
